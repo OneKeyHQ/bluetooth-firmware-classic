@@ -38,7 +38,7 @@ jobs:
           ./make_images.sh
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: "${{ github.event.repository.name }}-${{ steps.vars.outputs.fw_revision }}-${{ steps.vars.outputs.build_date }}-${{ steps.vars.outputs.short_hash }}"
           path: |
