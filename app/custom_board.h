@@ -99,6 +99,7 @@ extern "C" {
 #define BATTERY_ADC_PIN	5
 
 #define USB_INS_PIN        7
+#define CHARGE_CTL_PIN	10
 //TWI
 #define TWI_STATUS_GPIO 25
 #define MASTER_TWI_INST     0       //!< TWI interface used as a master accessing EEPROM memory.
@@ -110,6 +111,9 @@ extern "C" {
 #define bt_power_off()	nrf_gpio_pin_clear(BT_POWER_CTL_PIN)
 #define stm32_power_on()	nrf_gpio_pin_set(STM_POWER_CTL_PIN)
 #define stm32_power_off()	nrf_gpio_pin_clear(STM_POWER_CTL_PIN)
+
+#define charge_on()		nrf_gpio_pin_set(CHARGE_CTL_PIN)
+#define charge_off()	nrf_gpio_pin_clear(CHARGE_CTL_PIN)
 
 //end HaoBTC
 
@@ -196,6 +200,15 @@ extern "C" {
 #define ARDUINO_A4_PIN              30    // Analog channel 4
 #define ARDUINO_A5_PIN              31    // Analog channel 5
 
+typedef enum {
+  HW_VER_INVALID = 0xFFFF,
+  HW_VER_V_1_X = 3300,
+  HW_VER_V_2_0 = 2072,
+  HW_VER_V_PURE = 984,
+  HW_VER_V_ERROR = 0,
+} HW_VER_t;
+
+#define HW_VER_ADC_VOLTAGE_TOLERANCE 10
 
 #ifdef __cplusplus
 }

@@ -48,6 +48,8 @@ extern "C" {
 
 #include "system_nrf.h"
 
+#define CONFIG_NFCT_PINS_AS_GPIOS
+
 #ifdef __cplusplus
 }
 #endif

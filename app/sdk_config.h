@@ -541,6 +541,64 @@
 
 // </e>
 
+// <e> BLE_FIDO_ENABLED - ble_fido - FIDO Service
+//==========================================================
+#ifndef BLE_FIDO_ENABLED
+#define BLE_FIDO_ENABLED 1
+#endif
+// <e> BLE_FIDO_CONFIG_LOG_ENABLED - Enables logging in the module.
+//==========================================================
+#ifndef BLE_FIDO_CONFIG_LOG_ENABLED
+#define BLE_FIDO_CONFIG_LOG_ENABLED 0
+#endif
+// <o> BLE_FIDO_CONFIG_LOG_LEVEL  - Default Severity level
+ 
+// <0=> Off 
+// <1=> Error 
+// <2=> Warning 
+// <3=> Info 
+// <4=> Debug 
+
+#ifndef BLE_FIDO_CONFIG_LOG_LEVEL
+#define BLE_FIDO_CONFIG_LOG_LEVEL 3
+#endif
+
+// <o> BLE_FIDO_CONFIG_INFO_COLOR  - ANSI escape code prefix.
+ 
+// <0=> Default 
+// <1=> Black 
+// <2=> Red 
+// <3=> Green 
+// <4=> Yellow 
+// <5=> Blue 
+// <6=> Magenta 
+// <7=> Cyan 
+// <8=> White 
+
+#ifndef BLE_FIDO_CONFIG_INFO_COLOR
+#define BLE_FIDO_CONFIG_INFO_COLOR 0
+#endif
+
+// <o> BLE_FIDO_CONFIG_DEBUG_COLOR  - ANSI escape code prefix.
+ 
+// <0=> Default 
+// <1=> Black 
+// <2=> Red 
+// <3=> Green 
+// <4=> Yellow 
+// <5=> Blue 
+// <6=> Magenta 
+// <7=> Cyan 
+// <8=> White 
+
+#ifndef BLE_FIDO_CONFIG_DEBUG_COLOR
+#define BLE_FIDO_CONFIG_DEBUG_COLOR 0
+#endif
+
+// </e>
+
+// </e>
+
 // <q> BLE_RSCS_C_ENABLED  - ble_rscs_c - Running Speed and Cadence Client
  
 
@@ -2399,7 +2457,7 @@
 // <e> NRFX_NFCT_ENABLED - nrfx_nfct - NFCT peripheral driver
 //==========================================================
 #ifndef NRFX_NFCT_ENABLED
-#define NRFX_NFCT_ENABLED 1
+#define NRFX_NFCT_ENABLED 0
 #endif
 // <o> NRFX_NFCT_CONFIG_IRQ_PRIORITY  - Interrupt priority
  
@@ -11380,12 +11438,12 @@
 
 // <o> NRF_SDH_BLE_GATTS_ATTR_TAB_SIZE - Attribute Table size in bytes. The size must be a multiple of 4. 
 #ifndef NRF_SDH_BLE_GATTS_ATTR_TAB_SIZE
-#define NRF_SDH_BLE_GATTS_ATTR_TAB_SIZE 1408
+#define NRF_SDH_BLE_GATTS_ATTR_TAB_SIZE 2048
 #endif
 
 // <o> NRF_SDH_BLE_VS_UUID_COUNT - The number of vendor-specific UUIDs. 
 #ifndef NRF_SDH_BLE_VS_UUID_COUNT
-#define NRF_SDH_BLE_VS_UUID_COUNT 1
+#define NRF_SDH_BLE_VS_UUID_COUNT 5
 #endif
 
 // <q> NRF_SDH_BLE_SERVICE_CHANGED  - Include the Service Changed characteristic in the Attribute Table.
