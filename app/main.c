@@ -144,7 +144,7 @@
 
 // SCHEDULER CONFIGS
 #define SCHED_MAX_EVENT_DATA_SIZE 64 //!< Maximum size of the scheduler event data.
-#define SCHED_QUEUE_SIZE          5 //!< Size of the scheduler queue.
+#define SCHED_QUEUE_SIZE          5  //!< Size of the scheduler queue.
 
 #define RCV_DATA_TIMEOUT_INTERVAL   APP_TIMER_TICKS(2000)
 #define BATTERY_LEVEL_MEAS_INTERVAL APP_TIMER_TICKS(1000) /**< Battery level measurement interval (ticks). */
@@ -521,6 +521,8 @@ static void gap_params_init(void)
 #endif
 }
 
+static void send_service_changed(void* p_event_data, uint16_t event_size);
+
 static uint16_t m_ble_gatt_max_data_len = BLE_GATT_ATT_MTU_DEFAULT - 3; /**< Maximum length of data (in bytes) that can be transmitted to the peer by the Nordic UART service module. */
 
 /**@brief Function for handling events from the GATT library. */
@@ -717,6 +719,34 @@ static void on_adv_evt(ble_adv_evt_t ble_adv_evt)
     }
 }
 
+static void send_service_changed(void* p_event_data, uint16_t event_size)
+{
+    static uint16_t start_handle;
+    // const  uint16_t end_handle = 0xFFFF;
+    ret_code_t err_code;
+
+    err_code = sd_ble_gatts_initial_user_handle_get(&start_handle);
+
+    if(err_code != NRF_SUCCESS)
+    {
+        NRF_LOG_ERROR("sd_ble_gatts_initial_user_handle_get() returned %s which should not happen.",
+                      nrf_strerror_get(err_code));
+        return NRF_ERROR_INTERNAL;
+    }
+
+    err_code = sd_ble_gatts_service_changed(m_conn_handle, start_handle, 0xFFFF);
+    if((err_code == BLE_ERROR_INVALID_CONN_HANDLE) || (err_code == NRF_ERROR_INVALID_STATE) || (err_code == NRF_ERROR_BUSY))
+    {
+        /* These errors can be expected when trying to send a Service Changed indication */
+        /* if the CCCD is not set to indicate. Thus, set the returning error code to success. */
+        NRF_LOG_WARNING("Client did not have the Service Changed indication set to enabled."
+                        "Error: 0x%08x",
+                        err_code);
+        err_code = NRF_SUCCESS;
+    }
+    APP_ERROR_CHECK(err_code);
+}
+
 /**@brief Function for handling BLE events.
  *
  * @param[in]   p_ble_evt   Bluetooth stack event.
@@ -822,6 +852,15 @@ static void ble_evt_handler(ble_evt_t const* p_ble_evt, void* p_context)
                          *((uint8_t*)&p_ble_evt->evt.gap_evt.params.auth_status.kdist_own),
                          *((uint8_t*)&p_ble_evt->evt.gap_evt.params.auth_status.kdist_peer));
             bond_check_key_flag = AUTH_VALUE;
+            break;
+
+        case BLE_GATTC_EVT_EXCHANGE_MTU_RSP:
+            NRF_LOG_INFO("BLE_GATTC_EVT_EXCHANGE_MTU_RSP");
+            app_sched_event_put(NULL, NULL, send_service_changed);
+            break;
+
+        case BLE_GATTS_EVT_HVC:
+            NRF_LOG_INFO("BLE_GATTS_EVT_HVC");
             break;
 
         default:
