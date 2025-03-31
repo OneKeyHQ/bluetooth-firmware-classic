@@ -213,7 +213,8 @@ static ble_uuid_t m_adv_uuids[] =                        /**< Universally unique
         {BLE_UUID_DEVICE_INFORMATION_SERVICE, BLE_UUID_TYPE_BLE},
 #endif
         {BLE_UUID_BATTERY_SERVICE, BLE_UUID_TYPE_BLE},
-        {BLE_UUID_FIDO_SERVICE, BLE_UUID_TYPE_BLE}};
+        {BLE_UUID_FIDO_SERVICE, BLE_UUID_TYPE_BLE},
+        {BLE_UUID_NUS_SERVICE, BLE_UUID_TYPE_BLE}};
 
 static void idle_state_handle(void);
 
