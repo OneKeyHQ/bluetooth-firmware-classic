@@ -205,7 +205,7 @@ static uint8_t bat_level_flag = 0;
 
 #ifdef BOND_ENABLE
 static pm_peer_id_t m_peer_to_be_deleted = PM_PEER_ID_INVALID;
-static bool is_bonded = false;
+static bool request_service_changed = false;
 #endif
 static uint16_t m_conn_handle = BLE_CONN_HANDLE_INVALID; /**< Handle of the current connection. */
 static ble_uuid_t m_adv_uuids[] =                        /**< Universally unique service identifiers. */
@@ -778,6 +778,7 @@ static void ble_evt_handler(ble_evt_t const* p_ble_evt, void* p_context)
                     NRF_LOG_DEBUG("Collector's bond deleted");
                     m_peer_to_be_deleted = PM_PEER_ID_INVALID;
                 }
+                request_service_changed = false;
             }
             break;
 
@@ -792,16 +793,6 @@ static void ble_evt_handler(ble_evt_t const* p_ble_evt, void* p_context)
                 APP_ERROR_CHECK(err_code);
                 nrf_ble_gatt_data_length_set(&m_gatt, m_conn_handle, BLE_GAP_DATA_LENGTH_DEFAULT);
                 // Start Security Request timer.
-                pm_peer_id_t peer_id = PM_PEER_ID_INVALID;
-                pm_peer_id_get(m_conn_handle, &peer_id);
-
-                if (peer_id != PM_PEER_ID_INVALID) {
-                    NRF_LOG_INFO("Bonded device connected (peer_id=%d)", peer_id);
-                    is_bonded = true;
-                } else {
-                    NRF_LOG_INFO("New device connected (unbonded)");
-                    is_bonded = false;
-                }
             }
             break;
 
@@ -865,16 +856,22 @@ static void ble_evt_handler(ble_evt_t const* p_ble_evt, void* p_context)
                          *((uint8_t*)&p_ble_evt->evt.gap_evt.params.auth_status.kdist_peer));
             bond_check_key_flag = AUTH_VALUE;
             break;
-
         case BLE_GATTC_EVT_EXCHANGE_MTU_RSP:
             NRF_LOG_INFO("BLE_GATTC_EVT_EXCHANGE_MTU_RSP");
-            if (is_bonded) {
+            if(request_service_changed)
+            {
                 app_sched_event_put(NULL, NULL, send_service_changed);
             }
             break;
 
         case BLE_GATTS_EVT_HVC:
             NRF_LOG_INFO("BLE_GATTS_EVT_HVC");
+            break;
+
+        case BLE_GATTS_EVT_SYS_ATTR_MISSING:
+        case BLE_GAP_EVT_CONN_SEC_UPDATE:
+            NRF_LOG_INFO("BLE_GATTS_EVT_SYS_ATTR_MISSING");
+            request_service_changed = true;
             break;
 
         default:
