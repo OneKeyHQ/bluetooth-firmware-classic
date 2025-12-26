@@ -19,7 +19,29 @@ chmod +x $PATH_UTILS/*
 
 ##### SETUP #####
 
-$PATH_UTILS/nrfutil install nrf5sdk-tools
+# Check if nrf5sdk-tools is already installed
+if $PATH_UTILS/nrfutil list 2>/dev/null | grep -q "nrf5sdk-tools"; then
+    echo "nrf5sdk-tools already installed, skipping install"
+else
+    echo "Installing nrf5sdk-tools..."
+    # Clean up any corrupted bootstrap cache that might cause issues
+    rm -rf ~/.nrfutil/bootstrap 2>/dev/null || true
+    # Try to install nrf5sdk-tools
+    # Note: This may fail if the bootstrap URL is unavailable (410 Gone error)
+    # In that case, the tools might still work if they're built into nrfutil
+    if ! $PATH_UTILS/nrfutil install nrf5sdk-tools 2>&1; then
+        echo "Warning: nrfutil install failed (likely due to unavailable bootstrap URL)"
+        echo "Checking if nrf5sdk-tools commands are available anyway..."
+        # Test if the commands we need are available
+        if $PATH_UTILS/nrfutil settings --help >/dev/null 2>&1 && \
+           $PATH_UTILS/nrfutil pkg --help >/dev/null 2>&1; then
+            echo "nrf5sdk-tools commands appear to be available, continuing..."
+        else
+            echo "Error: Required nrfutil commands not available"
+            exit 1
+        fi
+    fi
+fi
 
 echo "$BT_SIG_PK" > $PATH_KEY
 unset BT_SIG_PK

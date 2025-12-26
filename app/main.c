@@ -118,13 +118,15 @@
 #define BLE_RCV_DATA     8
 #define BLE_FIDO_DATA    9
 
-#define BLE_DEF        0
-#define BLE_ON_ALWAYS  1
-#define BLE_OFF_ALWAYS 2
-#define BLE_DISCON     3
-#define BLE_ON_TEMPO   5
-#define BLE_OFF_TEMPO  6
-#define BLE_STATUS     7
+#define BLE_DEF            0
+#define BLE_ON_ALWAYS      1
+#define BLE_OFF_ALWAYS     2
+#define BLE_DISCON         3
+#define BLE_ON_TEMPO       5
+#define BLE_OFF_TEMPO      6
+#define BLE_STATUS         7
+#define BLE_PASSKEY_ACCEPT 8
+#define BLE_PASSKEY_REJECT 9
 
 #define NO_CHARGE  0
 #define USB_CHARGE 1
@@ -167,14 +169,14 @@
 
 #define LESC_DEBUG_MODE 0 /**< Set to 1 to use LESC debug keys, allows you to  use a sniffer to inspect traffic. */
 
-#define SEC_PARAM_BOND            1                            /**< Perform bonding. */
-#define SEC_PARAM_MITM            1                            /**< Man In The Middle protection required (applicable when display module is detected). */
-#define SEC_PARAM_LESC            1                            /**< LE Secure Connections enabled. */
-#define SEC_PARAM_KEYPRESS        0                            /**< Keypress notifications not enabled. */
-#define SEC_PARAM_IO_CAPABILITIES BLE_GAP_IO_CAPS_DISPLAY_ONLY /**< Display I/O capabilities. */
-#define SEC_PARAM_OOB             0                            /**< Out Of Band data not available. */
-#define SEC_PARAM_MIN_KEY_SIZE    7                            /**< Minimum encryption key size. */
-#define SEC_PARAM_MAX_KEY_SIZE    16                           /**< Maximum encryption key size. */
+#define SEC_PARAM_BOND            1                             /**< Perform bonding. */
+#define SEC_PARAM_MITM            1                             /**< Man In The Middle protection required (applicable when display module is detected). */
+#define SEC_PARAM_LESC            1                             /**< LE Secure Connections enabled. */
+#define SEC_PARAM_KEYPRESS        0                             /**< Keypress notifications not enabled. */
+#define SEC_PARAM_IO_CAPABILITIES BLE_GAP_IO_CAPS_DISPLAY_YESNO /**< Display I/O capabilities. */
+#define SEC_PARAM_OOB             0                             /**< Out Of Band data not available. */
+#define SEC_PARAM_MIN_KEY_SIZE    7                             /**< Minimum encryption key size. */
+#define SEC_PARAM_MAX_KEY_SIZE    16                            /**< Maximum encryption key size. */
 
 #define PASSKEY_LENGTH     6 /**< Length of pass-key received by the stack for display. */
 #define HEAD_NAME_LENGTH   1
@@ -202,6 +204,9 @@ static uint8_t mac[6] = {0x42, 0x13, 0xc7, 0x98, 0x95, 0x1a}; // Device MAC addr
 static char ble_adv_name[20] = {0};
 
 static uint8_t bat_level_flag = 0;
+
+static uint8_t pending_passkey[PASSKEY_LENGTH] = {0};
+static bool waiting_passkey_response = false;
 
 #ifdef BOND_ENABLE
 static pm_peer_id_t m_peer_to_be_deleted = PM_PEER_ID_INVALID;
@@ -391,6 +396,7 @@ static void pm_evt_handler(pm_evt_t const* p_evt)
 
     switch(p_evt->evt_id)
     {
+
         case PM_EVT_CONN_SEC_SUCCEEDED:
             {
                 pm_conn_sec_status_t conn_sec_status;
@@ -401,7 +407,11 @@ static void pm_evt_handler(pm_evt_t const* p_evt)
 
                 if(conn_sec_status.mitm_protected)
                 {
-                    send_ble_data_to_st_byte(UART_CMD_BLE_PAIR_STA, VALUE_SECCESS);
+                    // Only send pairing success message for new bonding, not for reconnection encryption
+                    if(p_evt->params.conn_sec_succeeded.procedure == PM_CONN_SEC_PROCEDURE_BONDING)
+                    {
+                        send_ble_data_to_st_byte(UART_CMD_BLE_PAIR_STA, VALUE_SECCESS);
+                    }
                     nrf_ble_gatt_data_length_set(&m_gatt, m_conn_handle, BLE_GAP_DATA_LENGTH_MAX);
                     NRF_LOG_INFO("Link secured. Role: %d. conn_handle: %d, Procedure: %d",
                                  ble_conn_state_role(p_evt->conn_handle),
@@ -836,6 +846,10 @@ static void ble_evt_handler(ble_evt_t const* p_ble_evt, void* p_context)
                 passkey[PASSKEY_LENGTH] = 0;
                 send_ble_data_to_st(UART_CMD_PAIR_CODE, passkey, PASSKEY_LENGTH);
                 NRF_LOG_INFO("Passkey: %s", nrf_log_push(passkey));
+
+                // Save passkey and set waiting flag
+                memcpy(pending_passkey, passkey, PASSKEY_LENGTH);
+                waiting_passkey_response = true;
             }
             break;
 

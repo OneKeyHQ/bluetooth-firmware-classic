@@ -303,40 +303,81 @@ void uart_event_handle(app_uart_evt_t* p_event)
                 switch(uart_data_array[4])
                 {
                     case UART_CMD_CTL_BLE:
-                        if(BLE_ON_ALWAYS == uart_data_array[6])
+                        switch(uart_data_array[6])
                         {
-                            ble_adv_switch_flag = BLE_ON_ALWAYS;
-                            NRF_LOG_INFO("RCV ble always ON.");
-                        }
-                        else if((BLE_OFF_ALWAYS == uart_data_array[6]) || (0 == uart_data_array[6]))
-                        {
-                            ble_adv_switch_flag = BLE_OFF_ALWAYS;
-                            NRF_LOG_INFO("RCV ble always OFF.");
-                        }
-                        else if(BLE_DISCON == uart_data_array[6])
-                        {
-                            ble_conn_flag = BLE_DISCON;
-                            NRF_LOG_INFO("RCV ble flag disconnect.");
-                        }
-                        else if(BLE_ON_TEMPO == uart_data_array[6])
-                        {
-                            ble_conn_flag = BLE_ON_TEMPO;
-                            NRF_LOG_INFO("RCV ble flag start adv flag.");
-                        }
-                        else if(BLE_OFF_TEMPO == uart_data_array[6])
-                        {
-                            ble_conn_flag = BLE_OFF_TEMPO;
-                            NRF_LOG_INFO("RCV ble flag stop adv flag.");
-                        }
-                        else if(BLE_STATUS == uart_data_array[6])
-                        {
-                            trans_info_flag = RESPONESE_BLE_STATUS;
-                            ;
-                        }
-                        else
-                        {
+                            case BLE_ON_ALWAYS:
+                                ble_adv_switch_flag = BLE_ON_ALWAYS;
+                                NRF_LOG_INFO("RCV ble always ON.");
+                                break;
+                            case BLE_OFF_ALWAYS:
+                            case BLE_DEF:
+                                ble_adv_switch_flag = BLE_OFF_ALWAYS;
+                                NRF_LOG_INFO("RCV ble always OFF.");
+                                break;
+                            case BLE_DISCON:
+                                ble_conn_flag = BLE_DISCON;
+                                NRF_LOG_INFO("RCV ble flag disconnect.");
+                                break;
+                            case BLE_ON_TEMPO:
+                                ble_conn_flag = BLE_ON_TEMPO;
+                                NRF_LOG_INFO("RCV ble flag start adv flag.");
+                                break;
+                            case BLE_OFF_TEMPO:
+                                ble_conn_flag = BLE_OFF_TEMPO;
+                                NRF_LOG_INFO("RCV ble flag stop adv flag.");
+                                break;
+                            case BLE_STATUS:
+                                trans_info_flag = RESPONESE_BLE_STATUS;
+                                break;
+                            case BLE_PASSKEY_ACCEPT:
+                                if(waiting_passkey_response && m_conn_handle != BLE_CONN_HANDLE_INVALID)
+                                {
+                                    ret_code_t err_code = NRF_SUCCESS;
+                                    bool passkey_provided = (lenth == PASSKEY_LENGTH + 3); // 1(cmd)+1(subcmd)+passkey+1(xor)
 
-                            NRF_LOG_INFO("Receive flag is %d \n", uart_data_array[6]);
+                                    if(passkey_provided)
+                                    {
+                                        if(memcmp(pending_passkey, uart_data_array + 7, PASSKEY_LENGTH) == 0)
+                                        {
+                                            // Passkey matches, accept pairing with actual passkey data
+                                            err_code =
+                                                sd_ble_gap_auth_key_reply(m_conn_handle, BLE_GAP_AUTH_KEY_TYPE_PASSKEY, NULL);
+                                        }
+                                        else
+                                        {
+                                            // Passkey mismatch, reject pairing
+                                            err_code = sd_ble_gap_auth_key_reply(m_conn_handle, BLE_GAP_AUTH_KEY_TYPE_NONE, NULL);
+                                            APP_ERROR_CHECK(err_code);
+                                            // Disconnect to ensure phone exits pairing screen
+                                            err_code =
+                                                sd_ble_gap_disconnect(m_conn_handle, BLE_HCI_REMOTE_USER_TERMINATED_CONNECTION);
+                                            APP_ERROR_CHECK(err_code);
+                                        }
+                                    }
+                                    else
+                                    {
+                                        err_code = sd_ble_gap_auth_key_reply(m_conn_handle, BLE_GAP_AUTH_KEY_TYPE_NONE, NULL);
+                                        APP_ERROR_CHECK(err_code);
+                                        err_code = sd_ble_gap_disconnect(m_conn_handle, BLE_HCI_REMOTE_USER_TERMINATED_CONNECTION);
+                                        APP_ERROR_CHECK(err_code);
+                                    }
+                                    APP_ERROR_CHECK(err_code);
+                                    waiting_passkey_response = false;
+                                }
+                                break;
+                            case BLE_PASSKEY_REJECT:
+                                if(waiting_passkey_response && m_conn_handle != BLE_CONN_HANDLE_INVALID)
+                                {
+                                    ret_code_t err_code =
+                                        sd_ble_gap_auth_key_reply(m_conn_handle, BLE_GAP_AUTH_KEY_TYPE_NONE, NULL);
+                                    err_code = sd_ble_gap_disconnect(m_conn_handle, BLE_HCI_REMOTE_USER_TERMINATED_CONNECTION);
+                                    APP_ERROR_CHECK(err_code);
+                                    waiting_passkey_response = false;
+                                }
+                                break;
+                            default:
+                                NRF_LOG_INFO("Receive flag is %d \n", uart_data_array[6]);
+                                break;
                         }
                         break;
                     case UART_CMD_RESET_BLE:
