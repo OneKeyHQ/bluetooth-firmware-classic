@@ -19,6 +19,17 @@ jobs:
           sudo python -m pip install --upgrade --ignore-installed pip
           sudo pip install wheel click
 
+      - name: Update nrfutil if needed
+        run: |
+          # Clean up any corrupted bootstrap cache
+          rm -rf ~/.nrfutil/bootstrap 2>/dev/null || true
+          # Download latest nrfutil from the new URL if the existing one fails
+          if ! ./utils/nrfutil --version >/dev/null 2>&1; then
+            echo "Downloading nrfutil from new URL..."
+            curl -L https://files.nordicsemi.com/artifactory/swtools/external/nrfutil/executables/x86_64-unknown-linux-gnu/nrfutil -o utils/nrfutil
+            chmod +x utils/nrfutil
+          fi
+
       - name: Populate vars
         id: vars
         run: |
